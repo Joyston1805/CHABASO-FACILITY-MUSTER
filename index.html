@@ -187,11 +187,18 @@
   .type-toggle button{flex:1;min-height:46px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-weight:600;font-size:15px}
   .type-toggle button.on{background:var(--amber);color:#1a1300;border-color:var(--amber)}
   .con-only{display:none}
-  #personScrim.is-contractor .con-only{display:block}
-  #personScrim.is-contractor .emp-only{display:none}
+  .t-emp,.t-nonemp,.t-con{display:none}
+  #personScrim.is-employee .t-emp{display:block}
+  #personScrim.is-contractor .t-nonemp,#personScrim.is-contractor .t-con{display:block}
+  #personScrim.is-visitor .t-nonemp{display:block}
+  .danger-btn{color:var(--red)}
+  .danger-btn:active{background:#3a2622}
 
   .ctag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);background:#16344d;padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:middle}
+  .ctag.vtag{color:#c9a3ff;background:#33264a}
   .row.con{border-color:#27445c}
+  .row.vis{border-color:#3a2f52}
+  .row .who{cursor:pointer}
   .dur{font-family:var(--mono)}
   .dur.soon{color:var(--amber)}
   .dur.over{color:var(--red);font-weight:600}
@@ -253,7 +260,7 @@
 <!-- Muster board -->
 <header class="board">
   <div class="facility">
-    <div class="facility-name" id="facilityName">CHABASO FACILITY MUSTER</div>
+    <div class="facility-name" id="facilityName">FACILITY MUSTER</div>
     <div class="count-wrap">
       <div class="count zero" id="onSiteCount">0</div>
       <div class="count-label">on site<br><b>right now</b></div>
@@ -286,9 +293,10 @@
 </div>
 
 <div class="menu" id="menu">
-  <div class="hd">Roster</div>
-  <button id="mImport"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> Import roster (CSV)</button>
-  <button id="mExportRoster"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> Export roster (CSV)</button>
+  <div class="hd">People</div>
+  <button id="mImport"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> Import people (CSV)</button>
+  <button id="mExportEmp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> Export employees (CSV)</button>
+  <button id="mExportGuests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> Export contractors &amp; visitors (CSV)</button>
   <div class="sep"></div>
   <div class="hd">Records</div>
   <button id="mExportLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> Export log (CSV)</button>
@@ -305,7 +313,7 @@
 <nav class="tabs" id="tabs">
   <button class="tab active" data-view="onsite">On site <span class="pill" id="pillOnsite">0</span></button>
   <button class="tab" data-view="roster">Roster <span class="pill" id="pillRoster">0</span></button>
-  <button class="tab" data-view="contractors">Contractors <span class="pill" id="pillContractors">0</span></button>
+  <button class="tab" data-view="guests">Guests <span class="pill" id="pillGuests">0</span></button>
   <button class="tab" data-view="log">Log <span class="pill" id="pillLog">0</span></button>
 </nav>
 
@@ -321,18 +329,50 @@
     <div class="type-toggle" id="typeToggle">
       <button type="button" data-type="employee" class="on">Employee</button>
       <button type="button" data-type="contractor">Contractor</button>
+      <button type="button" data-type="visitor">Visitor</button>
     </div>
     <div class="field"><label>Name</label><input id="fName" type="text" placeholder="Full name" autocomplete="off"></div>
     <div class="field"><label>Email or phone</label><input id="fContact" type="text" placeholder="Optional" autocomplete="off"></div>
-    <div class="field emp-only"><label>Team / group</label><input id="fTeam" type="text" placeholder="e.g. Line 3, Maintenance" autocomplete="off"></div>
-    <div class="field con-only"><label>Company</label><input id="fCompany" type="text" placeholder="Contractor's company" autocomplete="off"></div>
-    <div class="field con-only"><label>Work / job</label><input id="fJob" type="text" placeholder="What they're here to do" autocomplete="off"></div>
-    <div class="field con-only"><label>Days required to finish</label><input id="fDays" type="number" min="0" step="1" placeholder="e.g. 5" autocomplete="off"></div>
-    <div class="field con-only"><label>Start date</label><input id="fStart" type="date"></div>
+    <div class="field t-emp"><label>Team / group</label><input id="fTeam" type="text" placeholder="e.g. Line 3, Maintenance" autocomplete="off"></div>
+    <div class="field t-nonemp"><label id="lblCompany">Company</label><input id="fCompany" type="text" placeholder="Their company / firm" autocomplete="off"></div>
+    <div class="field t-nonemp"><label id="lblJob">Work / job</label><input id="fJob" type="text" placeholder="What they're here to do" autocomplete="off"></div>
+    <div class="field t-nonemp"><label id="lblHost">Host / sponsor</label><input id="fHost" type="text" placeholder="Who they're here to see" autocomplete="off"></div>
+    <div class="field t-con"><label>Days required to finish</label><input id="fDays" type="number" min="0" step="1" placeholder="e.g. 5" autocomplete="off"></div>
+    <div class="field t-con"><label>Start date</label><input id="fStart" type="date"></div>
     <label class="check-toggle" id="checkInToggleWrap"><input type="checkbox" id="fCheckIn"> Check in now</label>
     <div class="modal-actions">
+      <button class="btn ghost danger-btn" id="personDelete" style="display:none">Remove</button>
       <button class="btn ghost" id="personCancel">Cancel</button>
       <button class="btn primary" id="personSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import options modal -->
+<div class="scrim" id="importScrim">
+  <div class="modal">
+    <h2>Import people</h2>
+    <p class="sub" id="importSub">Choose what these rows are, and whether to add them to your current list or replace it.</p>
+    <div class="field">
+      <label>These rows are</label>
+      <div class="type-toggle" id="importType">
+        <button type="button" data-type="employee" class="on">Employees</button>
+        <button type="button" data-type="contractor">Contractors</button>
+        <button type="button" data-type="visitor">Visitors</button>
+      </div>
+      <p class="sub" style="margin:6px 0 0;font-size:13px">Rows that already include a <b>type</b> column keep their own type; this applies to the rest.</p>
+    </div>
+    <div class="field">
+      <label>How to apply</label>
+      <div class="type-toggle" id="importMode">
+        <button type="button" data-mode="merge" class="on">Add &amp; update</button>
+        <button type="button" data-mode="replace">Replace list</button>
+      </div>
+      <p class="sub" id="importModeNote" style="margin:6px 0 0;font-size:13px">Keeps everyone already in the app; updates matching names and adds new ones. Current check-ins are untouched.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="importCancel">Cancel</button>
+      <button class="btn primary" id="importConfirm">Import</button>
     </div>
   </div>
 </div>
@@ -391,9 +431,6 @@ const Store = (() => {
 const DEFAULTS = {
   facility: 'Facility Muster',
   shifts: [
-    { label:'FIRST', start:'08:00', end:'16:30' },
-    { label:'SECOND', start:'16:00', end:'00:30' },
-    { label:'THIRD', start:'00:00', end:'08:30' }
   ]
 };
 let settings = JSON.parse(JSON.stringify(DEFAULTS));
@@ -403,6 +440,7 @@ let view = 'onsite';
 let query = '';
 let editingId = null;
 let personType = 'employee';
+let pendingImport = null, importType = 'employee', importMode = 'merge';
 
 const $ = id => document.getElementById(id);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -461,14 +499,14 @@ function checkIn(p){
   if(p.status==='in') return;
   p.status='in'; p.since=Date.now();
   const sh=currentShift();
-  log.unshift({id:uid(),personId:p.id,name:p.name,team:p.team,type:'in',ts:Date.now(),shift:sh.label});
+  log.unshift({id:uid(),personId:p.id,name:p.name,team:groupOf(p),type:'in',ts:Date.now(),shift:sh.label});
   saveData(); render(); toast(p.name+' checked in');
 }
 function checkOut(p){
   if(p.status!=='in') return;
   p.status='out';
   const sh=currentShift();
-  log.unshift({id:uid(),personId:p.id,name:p.name,team:p.team,type:'out',ts:Date.now(),shift:sh.label});
+  log.unshift({id:uid(),personId:p.id,name:p.name,team:groupOf(p),type:'out',ts:Date.now(),shift:sh.label});
   p.since=null;
   saveData(); render(); toast(p.name+' checked out');
 }
@@ -477,7 +515,7 @@ function checkAllOut(){
   if(!on.length){ toast('No one is on site'); return; }
   if(!confirm('Check out all '+on.length+' people currently on site?')) return;
   const sh=currentShift();
-  on.forEach(p=>{ p.status='out'; p.since=null; log.unshift({id:uid(),personId:p.id,name:p.name,team:p.team,type:'out',ts:Date.now(),shift:sh.label}); });
+  on.forEach(p=>{ p.status='out'; p.since=null; log.unshift({id:uid(),personId:p.id,name:p.name,team:groupOf(p),type:'out',ts:Date.now(),shift:sh.label}); });
   saveData(); render(); toast('Checked out '+on.length+' people');
 }
 
@@ -485,8 +523,9 @@ function checkAllOut(){
 function matches(p){
   if(!query) return true;
   const q=query.toLowerCase();
-  return [(p.name||''),(p.team||''),(p.contact||''),(p.company||''),(p.job||'')].some(s=>s.toLowerCase().includes(q));
+  return [(p.name||''),(p.team||''),(p.contact||''),(p.company||''),(p.job||''),(p.host||'')].some(s=>s.toLowerCase().includes(q));
 }
+function groupOf(p){ return p.team || p.company || ''; }
 
 function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
 function midnight(d){ const x=new Date(d); x.setHours(0,0,0,0); return x.getTime(); }
@@ -505,13 +544,13 @@ function contractorStatus(p){
 }
 
 function personRow(p){
-  const con = p.type==='contractor';
+  const con = p.type==='contractor', vis = p.type==='visitor';
   const meta=[];
-  if(con){
+  if(con || vis){
     if(p.company) meta.push('<span class="team">'+esc(p.company)+'</span>');
     if(p.job) meta.push('<span>'+esc(p.job)+'</span>');
-    const cs=contractorStatus(p);
-    if(cs) meta.push('<span class="dur '+cs.cls+'">'+esc(cs.text)+'</span>');
+    if(p.host) meta.push('<span>'+(vis?'visiting ':'sponsor ')+esc(p.host)+'</span>');
+    if(con){ const cs=contractorStatus(p); if(cs) meta.push('<span class="dur '+cs.cls+'">'+esc(cs.text)+'</span>'); }
   } else {
     if(p.team) meta.push('<span class="team">'+esc(p.team)+'</span>');
   }
@@ -520,9 +559,10 @@ function personRow(p){
   const btn = p.status==='in'
     ? '<button class="rowbtn out" data-out="'+p.id+'">Check out</button>'
     : '<button class="rowbtn in" data-in="'+p.id+'">Check in</button>';
-  const tag = con ? '<span class="ctag">Contractor</span>' : '';
-  return '<div class="row'+(con?' con':'')+'"><span class="dot '+(p.status==='in'?'in':'')+'"></span>'+
-    '<div class="who"><div class="nm">'+esc(p.name)+tag+'</div>'+
+  const tag = con ? '<span class="ctag">Contractor</span>' : vis ? '<span class="ctag vtag">Visitor</span>' : '';
+  const rowcls = con?' con':vis?' vis':'';
+  return '<div class="row'+rowcls+'"><span class="dot '+(p.status==='in'?'in':'')+'"></span>'+
+    '<div class="who" data-edit="'+p.id+'"><div class="nm">'+esc(p.name)+tag+'</div>'+
     (meta.length?'<div class="meta">'+meta.join('')+'</div>':'')+'</div>'+btn+'</div>';
 }
 
@@ -532,7 +572,7 @@ function render(){
   const cEl=$('onSiteCount'); cEl.textContent=on.length; cEl.classList.toggle('zero',on.length===0);
   $('pillOnsite').textContent=on.length;
   $('pillRoster').textContent=roster.length;
-  $('pillContractors').textContent=roster.filter(p=>p.type==='contractor').length;
+  $('pillGuests').textContent=roster.filter(p=>p.type==='contractor'||p.type==='visitor').length;
   $('pillLog').textContent=log.length;
   $('facilityName').textContent=(settings.facility||'Facility Muster').toUpperCase();
 
@@ -562,12 +602,12 @@ function render(){
 
   let people;
   if(view==='onsite'){ people = on.slice(); people.sort((a,b)=>(b.since||0)-(a.since||0)); }
-  else if(view==='contractors'){ people = roster.filter(p=>p.type==='contractor'); people.sort((a,b)=> (a.status===b.status?0:a.status==='in'?-1:1) || a.name.localeCompare(b.name)); }
+  else if(view==='guests'){ people = roster.filter(p=>p.type==='contractor'||p.type==='visitor'); people.sort((a,b)=> (a.status===b.status?0:a.status==='in'?-1:1) || a.name.localeCompare(b.name)); }
   else { people = roster.slice(); people.sort((a,b)=> (a.status===b.status?0:a.status==='in'?-1:1) || a.name.localeCompare(b.name)); }
 
   if(!people.length){
     if(view==='onsite') list.innerHTML = emptyBlock('Nobody on site','Type a name in the search box above to check someone in, or open the Roster tab.');
-    else if(view==='contractors') list.innerHTML = emptyBlock('No contractors yet','Tap “Add person”, switch the toggle to Contractor, and record their company, the job, and how many days it should take.');
+    else if(view==='guests') list.innerHTML = emptyBlock('No guests yet','Tap “Add person”, switch the toggle to Contractor or Visitor, and record their company, the job or purpose, and (for contractors) how many days it should take.');
     else if(roster.length===0) list.innerHTML = rosterEmpty();
     else list.innerHTML = emptyBlock('Nothing here','No people to show in this view yet.');
     return;
@@ -589,19 +629,26 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;',
 /* ---------------- Person modal ---------------- */
 function setPersonType(t){
   personType=t;
-  $('personScrim').classList.toggle('is-contractor', t==='contractor');
+  const sc=$('personScrim');
+  sc.classList.remove('is-employee','is-contractor','is-visitor');
+  sc.classList.add('is-'+t);
   $('typeToggle').querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.type===t));
+  // labels that differ between contractor and visitor
+  $('lblJob').textContent  = t==='visitor' ? 'Purpose of visit' : 'Work / job';
+  $('lblHost').textContent = t==='visitor' ? 'Visiting (host)'   : 'Host / sponsor';
+  $('lblCompany').textContent = t==='visitor' ? 'Company / affiliation' : 'Company';
 }
 function openPerson(id){
   editingId = id||null;
   const p = id ? roster.find(x=>x.id===id) : null;
   setPersonType(p ? (p.type||'employee') : 'employee');
   $('personTitle').textContent = p?'Edit person':'Add person';
-  $('personSub').textContent = p?'Update this person’s details.':'Adds to the roster. Tick the box to check them in immediately.';
+  $('personSub').textContent = p?'Update details, or remove this person from the list.':'Adds to the list. Tick the box to check them in immediately.';
   $('fName').value=p?p.name:''; $('fContact').value=p?(p.contact||''):''; $('fTeam').value=p?(p.team||''):'';
-  $('fCompany').value=p?(p.company||''):''; $('fJob').value=p?(p.job||''):'';
+  $('fCompany').value=p?(p.company||''):''; $('fJob').value=p?(p.job||''):''; $('fHost').value=p?(p.host||''):'';
   $('fDays').value=p&&p.days?p.days:''; $('fStart').value=(p&&p.startDate)?p.startDate:todayISO();
   $('checkInToggleWrap').style.display = p?'none':'flex'; $('fCheckIn').checked=false;
+  $('personDelete').style.display = p?'inline-flex':'none';
   $('personScrim').classList.add('show'); setTimeout(()=>$('fName').focus(),50);
 }
 function closePerson(){ $('personScrim').classList.remove('show'); editingId=null; }
@@ -609,11 +656,11 @@ function savePerson(){
   const name=$('fName').value.trim();
   if(!name){ $('fName').focus(); $('fName').style.borderColor='var(--red)'; return; }
   const contact=$('fContact').value.trim();
-  const isCon = personType==='contractor';
-  const fields = isCon
-    ? { type:'contractor', team:'', company:$('fCompany').value.trim(), job:$('fJob').value.trim(),
-        days:parseInt($('fDays').value,10)||0, startDate:$('fStart').value||todayISO() }
-    : { type:'employee', team:$('fTeam').value.trim(), company:'', job:'', days:0, startDate:'' };
+  const t=personType;
+  let fields;
+  if(t==='contractor') fields={ type:'contractor', team:'', company:$('fCompany').value.trim(), job:$('fJob').value.trim(), host:$('fHost').value.trim(), days:parseInt($('fDays').value,10)||0, startDate:$('fStart').value||todayISO() };
+  else if(t==='visitor') fields={ type:'visitor', team:'', company:$('fCompany').value.trim(), job:$('fJob').value.trim(), host:$('fHost').value.trim(), days:0, startDate:'' };
+  else fields={ type:'employee', team:$('fTeam').value.trim(), company:'', job:'', host:'', days:0, startDate:'' };
   if(editingId){
     const p=roster.find(x=>x.id===editingId);
     if(p){ p.name=name; p.contact=contact; Object.assign(p, fields); }
@@ -621,9 +668,17 @@ function savePerson(){
   } else {
     const p=Object.assign({id:uid(),name,contact,status:'out',since:null}, fields);
     roster.push(p);
-    if($('fCheckIn').checked){ checkIn(p); } else { toast(isCon?'Contractor added':'Added to roster'); }
+    if($('fCheckIn').checked){ checkIn(p); } else { toast(t==='employee'?'Added to roster':(t==='visitor'?'Visitor added':'Contractor added')); }
   }
   saveData(); closePerson(); render();
+}
+function deletePerson(){
+  if(!editingId) return;
+  const p=roster.find(x=>x.id===editingId); if(!p) return;
+  if(!confirm('Remove '+p.name+' from the list? This does not delete their past log entries.')) return;
+  if(p.status==='in'){ const sh=currentShift(); log.unshift({id:uid(),personId:p.id,name:p.name,team:groupOf(p),type:'out',ts:Date.now(),shift:sh.label}); }
+  roster = roster.filter(x=>x.id!==editingId);
+  saveData(); closePerson(); render(); toast(p.name+' removed');
 }
 
 /* ---------------- Settings modal ---------------- */
@@ -653,12 +708,13 @@ function download(name, text, type){
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
 function csvCell(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
-function exportRoster(){
-  const head=['name','type','contact','team','company','job','days_required','start_date','status'];
-  const rows=[head].concat(roster.map(p=>[p.name,p.type||'employee',p.contact||'',p.team||'',p.company||'',p.job||'',p.days||'',p.startDate||'',p.status]));
-  download('roster.csv', rows.map(r=>r.map(csvCell).join(',')).join('\n'), 'text/csv');
-  toast('Roster exported');
+function exportPeople(filter, filename){
+  const head=['name','type','contact','team','company','job','host','days_required','start_date','status'];
+  const rows=[head].concat(roster.filter(filter).map(p=>[p.name,p.type||'employee',p.contact||'',p.team||'',p.company||'',p.job||'',p.host||'',p.days||'',p.startDate||'',p.status]));
+  download(filename, rows.map(r=>r.map(csvCell).join(',')).join('\n'), 'text/csv');
 }
+function exportEmployees(){ exportPeople(p=>(p.type||'employee')==='employee','employees.csv'); toast('Employees exported'); }
+function exportGuests(){ exportPeople(p=>p.type==='contractor'||p.type==='visitor','contractors-visitors.csv'); toast('Contractors & visitors exported'); }
 function exportLog(){
   const rows=[['name','team','event','date','time','shift']].concat(log.slice().reverse().map(e=>{
     const d=new Date(e.ts); return [e.name,e.team||'',e.type,d.toLocaleDateString(),pad(d.getHours())+':'+pad(d.getMinutes()),e.shift||''];
@@ -682,18 +738,62 @@ function parseCSV(text){
   if(cell.length||row.length){ row.push(cell); rows.push(row); }
   return rows.filter(r=>r.some(c=>c.trim()!==''));
 }
-function importRosterCSV(text){
-  const rows=parseCSV(text); if(!rows.length){ toast('Empty file'); return; }
-  let start=0, idx={name:0,contact:1,team:2};
+function colIndex(head,rx){ return head.findIndex(h=>rx.test(h)); }
+function prepareImport(text){
+  const rows=parseCSV(text); if(!rows.length){ toast('That file looks empty'); return; }
+  let start=0, idx={name:0,type:-1,contact:1,team:2,company:-1,job:-1,days:-1,start:-1,host:-1};
   const head=rows[0].map(h=>h.trim().toLowerCase());
-  if(head.includes('name')){ start=1; idx={name:head.indexOf('name'),contact:head.findIndex(h=>/contact|email|phone/.test(h)),team:head.findIndex(h=>/team|group|dept/.test(h))}; }
-  let added=0;
-  for(let i=start;i<rows.length;i++){
-    const r=rows[i]; const name=(r[idx.name]||'').trim(); if(!name) continue;
-    roster.push({id:uid(),name,contact:(idx.contact>-1?r[idx.contact]:'' )||'',team:(idx.team>-1?r[idx.team]:'')||'',status:'out',since:null});
-    added++;
+  if(head.includes('name')){
+    start=1;
+    idx={ name:head.indexOf('name'), type:colIndex(head,/^type$|category/), contact:colIndex(head,/contact|email|phone/),
+      team:colIndex(head,/team|group|dept/), company:colIndex(head,/company|firm|employer/), job:colIndex(head,/job|work|purpose|task/),
+      days:colIndex(head,/day/), start:colIndex(head,/start/), host:colIndex(head,/host|sponsor|visit/) };
   }
-  saveData(); render(); toast('Imported '+added+' people');
+  const get=(r,i)=> (i>-1 && r[i]!=null) ? String(r[i]).trim() : '';
+  const list=[];
+  for(let i=start;i<rows.length;i++){
+    const r=rows[i]; const name=get(r,idx.name); if(!name) continue;
+    let type=get(r,idx.type).toLowerCase();
+    if(type!=='contractor'&&type!=='visitor'&&type!=='employee') type='';
+    list.push({ name, type, contact:get(r,idx.contact), team:get(r,idx.team), company:get(r,idx.company),
+      job:get(r,idx.job), days:parseInt(get(r,idx.days),10)||0, startDate:get(r,idx.start), host:get(r,idx.host) });
+  }
+  if(!list.length){ toast('No names found in that file'); return; }
+  pendingImport=list; importType='employee'; importMode='merge';
+  $('importType').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.type==='employee'));
+  $('importMode').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode==='merge'));
+  updateImportNote();
+  $('importSub').textContent='Found '+list.length+' '+(list.length===1?'person':'people')+'. Choose how to bring them in.';
+  $('importScrim').classList.add('show');
+}
+function updateImportNote(){
+  $('importModeNote').textContent = importMode==='replace'
+    ? 'Replaces the whole list with this file. People not in the file are removed and everyone is set to checked-out — use for a clean re-sync.'
+    : 'Keeps everyone already in the app; updates people whose names match and adds new ones. Current check-ins stay untouched.';
+}
+function normImport(p, def){
+  const type=p.type||def;
+  const base={name:p.name,contact:p.contact,type};
+  if(type==='employee') return Object.assign(base,{team:p.team,company:'',job:'',host:'',days:0,startDate:''});
+  if(type==='visitor')  return Object.assign(base,{team:'',company:p.company,job:p.job,host:p.host,days:0,startDate:''});
+  return Object.assign(base,{team:'',company:p.company,job:p.job,host:p.host,days:p.days||0,startDate:p.startDate||''});
+}
+function applyImport(){
+  if(!pendingImport) return;
+  if(importMode==='replace'){
+    if(!confirm('Replace the whole list with '+pendingImport.length+' people from the file? People not in the file are removed and everyone is set to checked-out.')) return;
+    roster = pendingImport.map(p=>Object.assign({id:uid(),status:'out',since:null}, normImport(p,importType)));
+    toast('List replaced — '+roster.length+' people');
+  } else {
+    let added=0, updated=0;
+    pendingImport.forEach(p=>{
+      const n=normImport(p,importType);
+      const ex=roster.find(x=>x.name.toLowerCase()===n.name.toLowerCase());
+      if(ex){ Object.assign(ex,n); updated++; } else { roster.push(Object.assign({id:uid(),status:'out',since:null}, n)); added++; }
+    });
+    toast('Imported — '+added+' added, '+updated+' updated');
+  }
+  pendingImport=null; $('importScrim').classList.remove('show'); saveData(); render();
 }
 function restoreBackup(text){
   try{ const o=JSON.parse(text);
@@ -734,9 +834,10 @@ function bind(){
   $('tabs').addEventListener('click',e=>{ const t=e.target.closest('.tab'); if(!t)return; view=t.dataset.view; render(); $('list').scrollTop=0; });
 
   $('list').addEventListener('click',e=>{
-    const inB=e.target.closest('[data-in]'), outB=e.target.closest('[data-out]');
+    const inB=e.target.closest('[data-in]'), outB=e.target.closest('[data-out]'), edB=e.target.closest('[data-edit]');
     if(inB){ const p=roster.find(x=>x.id===inB.dataset.in); if(p)checkIn(p); }
     else if(outB){ const p=roster.find(x=>x.id===outB.dataset.out); if(p)checkOut(p); }
+    else if(edB){ openPerson(edB.dataset.edit); }
     else if(e.target.id==='emptyAdd') openPerson();
     else if(e.target.id==='emptyImport') pickFile('csv');
     else if(e.target.id==='emptySample') loadSample();
@@ -745,11 +846,19 @@ function bind(){
   $('addBtn').addEventListener('click',()=>openPerson());
   $('personCancel').addEventListener('click',closePerson);
   $('personSave').addEventListener('click',savePerson);
+  $('personDelete').addEventListener('click',deletePerson);
   $('typeToggle').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setPersonType(b.dataset.type); });
   $('personScrim').addEventListener('click',e=>{ if(e.target.id==='personScrim') closePerson(); });
   $('fName').addEventListener('input',()=>$('fName').style.borderColor='');
   $('fName').addEventListener('keydown',e=>{ if(e.key==='Enter') savePerson(); });
   $('fTeam').addEventListener('keydown',e=>{ if(e.key==='Enter') savePerson(); });
+
+  // import options modal
+  $('importType').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; importType=b.dataset.type; $('importType').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); });
+  $('importMode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; importMode=b.dataset.mode; $('importMode').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); updateImportNote(); });
+  $('importCancel').addEventListener('click',()=>{ pendingImport=null; $('importScrim').classList.remove('show'); });
+  $('importConfirm').addEventListener('click',applyImport);
+  $('importScrim').addEventListener('click',e=>{ if(e.target.id==='importScrim'){ pendingImport=null; $('importScrim').classList.remove('show'); } });
 
   // menu
   const menu=$('menu');
@@ -757,7 +866,8 @@ function bind(){
   document.addEventListener('click',()=>menu.classList.remove('show'));
   menu.addEventListener('click',e=>e.stopPropagation());
   $('mImport').addEventListener('click',()=>{ menu.classList.remove('show'); pickFile('csv'); });
-  $('mExportRoster').addEventListener('click',()=>{ menu.classList.remove('show'); exportRoster(); });
+  $('mExportEmp').addEventListener('click',()=>{ menu.classList.remove('show'); exportEmployees(); });
+  $('mExportGuests').addEventListener('click',()=>{ menu.classList.remove('show'); exportGuests(); });
   $('mExportLog').addEventListener('click',()=>{ menu.classList.remove('show'); exportLog(); });
   $('mPrint').addEventListener('click',()=>{ menu.classList.remove('show'); printMuster(); });
   $('mBackup').addEventListener('click',()=>{ menu.classList.remove('show'); backup(); });
@@ -772,11 +882,11 @@ function bind(){
   $('fileInput').addEventListener('change',e=>{
     const f=e.target.files[0]; if(!f) return;
     const r=new FileReader();
-    r.onload=()=>{ fileMode==='json'? restoreBackup(r.result) : importRosterCSV(r.result); };
+    r.onload=()=>{ fileMode==='json'? restoreBackup(r.result) : prepareImport(r.result); };
     r.readAsText(f);
   });
 
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closePerson(); closeSettings(); menu.classList.remove('show'); } });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closePerson(); closeSettings(); menu.classList.remove('show'); pendingImport=null; $('importScrim').classList.remove('show'); } });
 }
 
 /* ---------------- Boot ---------------- */
