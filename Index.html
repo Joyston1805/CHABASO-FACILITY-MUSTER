@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#14181b">
+<title>Facility Muster — Shift Check-in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14181b;
+    --panel:#1c2228;
+    --panel-2:#232b33;
+    --line:#2e3742;
+    --line-soft:#252d35;
+    --txt:#e8ecf0;
+    --muted:#8a97a4;
+    --faint:#5f6b76;
+    --amber:#f2a900;
+    --amber-dim:#5a4a1c;
+    --green:#3dd68c;
+    --green-dim:#1d4636;
+    --red:#e5604d;
+    --blue:#5aa9ef;
+    --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --sans:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --r:10px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg);color:var(--txt);font-family:var(--sans);
+    font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;min-height:100vh;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;color:inherit}
+  input{font-family:inherit}
+  ::selection{background:var(--amber);color:#000}
+
+  /* ---------- Muster board (hero) ---------- */
+  .board{
+    background:linear-gradient(180deg,#191f25,#14181b);
+    border-bottom:1px solid var(--line);
+    padding:18px 20px 16px;
+    display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;
+  }
+  .facility{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .facility-name{
+    font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .count-wrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .count{
+    font-family:var(--mono);font-weight:700;font-size:72px;line-height:.9;
+    color:var(--green);letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+  }
+  .count.zero{color:var(--faint)}
+  .count-label{
+    font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+    font-weight:600;line-height:1.3;
+  }
+  .count-label b{display:block;color:var(--txt);font-size:13px;letter-spacing:.14em}
+
+  .shift-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:14px 18px;min-width:178px;text-align:right;
+  }
+  .clock{
+    font-family:var(--mono);font-weight:600;font-size:30px;color:var(--amber);
+    font-variant-numeric:tabular-nums;letter-spacing:.01em;
+  }
+  .clock-date{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.08em;margin-top:2px}
+  .shift-row{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:10px}
+  .shift-badge{
+    font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--amber);background:var(--amber-dim);
+    padding:4px 9px;border-radius:6px;
+  }
+  .shift-win{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;gap:10px;padding:14px 20px;border-bottom:1px solid var(--line);
+    background:var(--bg);position:sticky;top:0;z-index:5;flex-wrap:wrap;
+  }
+  .search{
+    flex:1 1 240px;display:flex;align-items:center;gap:10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:0 14px;min-height:52px;
+  }
+  .search svg{flex:none;color:var(--faint)}
+  .search input{
+    flex:1;background:none;border:none;outline:none;color:var(--txt);
+    font-size:17px;min-width:0;
+  }
+  .search input::placeholder{color:var(--faint)}
+  .search .clear{display:none;color:var(--muted);font-size:22px;padding:4px 6px;background:none;line-height:1}
+  .search.has .clear{display:block}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-height:52px;padding:0 18px;border-radius:var(--r);font-weight:600;font-size:15px;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--txt);white-space:nowrap;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--amber);color:#1a1300;border-color:var(--amber)}
+  .btn.ghost{background:transparent}
+  .btn svg{flex:none}
+
+  /* ---------- Tabs ---------- */
+  .tabs{display:flex;gap:4px;padding:12px 20px 0;border-bottom:1px solid var(--line);background:var(--bg)}
+  .tab{
+    background:none;padding:12px 16px 14px;font-size:15px;font-weight:600;color:var(--muted);
+    border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:8px;
+  }
+  .tab.active{color:var(--txt);border-bottom-color:var(--amber)}
+  .tab .pill{
+    font-family:var(--mono);font-size:12px;font-weight:600;background:var(--panel-2);
+    color:var(--muted);padding:1px 8px;border-radius:20px;
+  }
+  .tab.active .pill{background:var(--amber-dim);color:var(--amber)}
+
+  /* ---------- List ---------- */
+  main{flex:1;overflow:auto;padding:14px 20px 120px}
+  .list{display:flex;flex-direction:column;gap:8px;max-width:920px;margin:0 auto}
+  .row{
+    display:flex;align-items:center;gap:14px;background:var(--panel);
+    border:1px solid var(--line-soft);border-radius:var(--r);padding:12px 14px;
+  }
+  .dot{width:11px;height:11px;border-radius:50%;flex:none;background:var(--faint)}
+  .dot.in{background:var(--green);box-shadow:0 0 0 4px var(--green-dim)}
+  .who{flex:1;min-width:0}
+  .who .nm{font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .who .meta{font-size:13px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
+  .who .meta .team{color:var(--blue)}
+  .who .meta .mono{font-family:var(--mono)}
+  .rowbtn{
+    min-height:46px;padding:0 16px;border-radius:8px;font-weight:600;font-size:14px;flex:none;
+    border:1px solid var(--line);background:var(--panel-2);color:var(--txt);
+  }
+  .rowbtn.in{background:var(--green-dim);border-color:#2c5e49;color:var(--green)}
+  .rowbtn.out{background:transparent;color:var(--muted)}
+  .rowbtn:active{transform:translateY(1px)}
+
+  /* log rows */
+  .logrow{
+    display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;
+    background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);padding:11px 14px;
+  }
+  .tag{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 8px;border-radius:6px;text-transform:uppercase}
+  .tag.in{background:var(--green-dim);color:var(--green)}
+  .tag.out{background:#3a2622;color:var(--red)}
+  .logrow .ts{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:right;white-space:nowrap}
+  .logrow .ts .sh{color:var(--amber)}
+
+  /* ---------- Empty states ---------- */
+  .empty{max-width:520px;margin:48px auto;text-align:center;color:var(--muted)}
+  .empty h2{color:var(--txt);font-size:20px;margin:0 0 8px;font-weight:600}
+  .empty p{margin:0 0 22px;font-size:15px;line-height:1.55}
+  .empty-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+  /* ---------- Modal ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(8,10,12,.72);display:none;align-items:center;justify-content:center;padding:18px;z-index:40}
+  .scrim.show{display:flex}
+  .modal{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;max-width:460px;
+    max-height:92vh;overflow:auto;padding:22px;
+  }
+  .modal h2{margin:0 0 4px;font-size:20px}
+  .modal .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.02em}
+  .field input{
+    width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;
+    color:var(--txt);font-size:17px;padding:12px 13px;outline:none;
+  }
+  .field input:focus{border-color:var(--amber)}
+  .modal-actions{display:flex;gap:10px;margin-top:20px}
+  .modal-actions .btn{flex:1}
+  .check-toggle{display:flex;align-items:center;gap:10px;margin-top:6px;color:var(--muted);font-size:14px;cursor:pointer;user-select:none}
+  .check-toggle input{width:20px;height:20px;accent-color:var(--green)}
+
+  .type-toggle{display:flex;gap:8px;margin-bottom:16px}
+  .type-toggle button{flex:1;min-height:46px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-weight:600;font-size:15px}
+  .type-toggle button.on{background:var(--amber);color:#1a1300;border-color:var(--amber)}
+  .con-only{display:none}
+  #personScrim.is-contractor .con-only{display:block}
+  #personScrim.is-contractor .emp-only{display:none}
+
+  .ctag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);background:#16344d;padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:middle}
+  .row.con{border-color:#27445c}
+  .dur{font-family:var(--mono)}
+  .dur.soon{color:var(--amber)}
+  .dur.over{color:var(--red);font-weight:600}
+  .results-head{max-width:920px;margin:0 auto 12px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+
+  .menu{position:absolute;right:20px;top:64px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;display:none;flex-direction:column;min-width:230px;z-index:30;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+  .menu.show{display:flex}
+  .menu button{display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:8px;background:none;text-align:left;font-size:15px;color:var(--txt)}
+  .menu button:hover{background:var(--panel-2)}
+  .menu button.danger{color:var(--red)}
+  .menu .sep{height:1px;background:var(--line);margin:4px 6px}
+  .menu .hd{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:8px 12px 4px;font-weight:600}
+
+  .iconbtn{width:52px;height:52px;border-radius:var(--r);background:var(--panel-2);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2);border:1px solid var(--line);color:var(--txt);padding:13px 20px;border-radius:30px;
+    font-size:15px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:10px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .tdot{width:9px;height:9px;border-radius:50%;background:var(--green)}
+
+  .banner{background:var(--amber-dim);color:var(--amber);font-size:13px;padding:9px 20px;text-align:center;border-bottom:1px solid var(--line);font-weight:500}
+
+  @media (max-width:640px){
+    .board{grid-template-columns:1fr;gap:14px}
+    .shift-card{text-align:left;min-width:0}
+    .shift-row{justify-content:flex-start}
+    .count{font-size:60px}
+    .clock{font-size:26px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important}
+    .dot.in{box-shadow:0 0 0 3px var(--green-dim)}
+  }
+  @media print{
+    body{background:#fff;color:#000}
+    .toolbar,.tabs,.board .shift-card,.iconbtn,.rowbtn,.menu,.scrim{display:none!important}
+    .row,.board{border-color:#ccc;background:#fff}
+    main{padding:0}
+    .print-head{display:block!important}
+  }
+  .print-head{display:none;padding:16px 20px;border-bottom:2px solid #000}
+  .print-head h1{margin:0;font-size:20px}
+  .print-head .pm{font-family:var(--mono);font-size:13px;color:#333;margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="print-head">
+  <h1>Muster / Roll-call list</h1>
+  <div class="pm" id="printMeta"></div>
+</div>
+
+<div id="storeBanner" class="banner" style="display:none">
+  This browser is blocking local storage, so check-ins won't be saved after you close the tab. If you're viewing this inside Claude, that's expected — download this file and open it on your computer to save data. You can Export a backup any time.
+</div>
+
+<!-- Muster board -->
+<header class="board">
+  <div class="facility">
+    <div class="facility-name" id="facilityName">CHABASO FACILITY MUSTER</div>
+    <div class="count-wrap">
+      <div class="count zero" id="onSiteCount">0</div>
+      <div class="count-label">on site<br><b>right now</b></div>
+    </div>
+  </div>
+  <div class="shift-card">
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="clock-date" id="clockDate"></div>
+    <div class="shift-row">
+      <span class="shift-win" id="shiftWin"></span>
+      <span class="shift-badge" id="shiftBadge">—</span>
+    </div>
+  </div>
+</header>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="search" id="searchBox">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+    <input id="search" type="text" placeholder="Type a name to check in or out…" autocomplete="off" spellcheck="false">
+    <button class="clear" id="searchClear" aria-label="Clear">&times;</button>
+  </div>
+  <button class="btn primary" id="addBtn">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+    Add person
+  </button>
+  <button class="iconbtn" id="menuBtn" aria-label="More">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+  </button>
+</div>
+
+<div class="menu" id="menu">
+  <div class="hd">Roster</div>
+  <button id="mImport"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> Import roster (CSV)</button>
+  <button id="mExportRoster"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> Export roster (CSV)</button>
+  <div class="sep"></div>
+  <div class="hd">Records</div>
+  <button id="mExportLog"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> Export log (CSV)</button>
+  <button id="mPrint"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z"/></svg> Print muster list</button>
+  <button id="mBackup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> Save full backup (JSON)</button>
+  <button id="mRestore"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg> Restore from backup</button>
+  <div class="sep"></div>
+  <div class="hd">Setup</div>
+  <button id="mSettings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1L14.5 2h-4l-.4 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5a7 7 0 0 0 .1-1z"/></svg> Shifts &amp; facility name</button>
+  <button id="mEndShift" class="danger"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg> Check everyone out</button>
+</div>
+
+<!-- Tabs -->
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-view="onsite">On site <span class="pill" id="pillOnsite">0</span></button>
+  <button class="tab" data-view="roster">Roster <span class="pill" id="pillRoster">0</span></button>
+  <button class="tab" data-view="contractors">Contractors <span class="pill" id="pillContractors">0</span></button>
+  <button class="tab" data-view="log">Log <span class="pill" id="pillLog">0</span></button>
+</nav>
+
+<main>
+  <div class="list" id="list"></div>
+</main>
+
+<!-- Add / edit modal -->
+<div class="scrim" id="personScrim">
+  <div class="modal">
+    <h2 id="personTitle">Add person</h2>
+    <p class="sub" id="personSub">Adds to the roster. Tick the box to check them in immediately.</p>
+    <div class="type-toggle" id="typeToggle">
+      <button type="button" data-type="employee" class="on">Employee</button>
+      <button type="button" data-type="contractor">Contractor</button>
+    </div>
+    <div class="field"><label>Name</label><input id="fName" type="text" placeholder="Full name" autocomplete="off"></div>
+    <div class="field"><label>Email or phone</label><input id="fContact" type="text" placeholder="Optional" autocomplete="off"></div>
+    <div class="field emp-only"><label>Team / group</label><input id="fTeam" type="text" placeholder="e.g. Line 3, Maintenance" autocomplete="off"></div>
+    <div class="field con-only"><label>Company</label><input id="fCompany" type="text" placeholder="Contractor's company" autocomplete="off"></div>
+    <div class="field con-only"><label>Work / job</label><input id="fJob" type="text" placeholder="What they're here to do" autocomplete="off"></div>
+    <div class="field con-only"><label>Days required to finish</label><input id="fDays" type="number" min="0" step="1" placeholder="e.g. 5" autocomplete="off"></div>
+    <div class="field con-only"><label>Start date</label><input id="fStart" type="date"></div>
+    <label class="check-toggle" id="checkInToggleWrap"><input type="checkbox" id="fCheckIn"> Check in now</label>
+    <div class="modal-actions">
+      <button class="btn ghost" id="personCancel">Cancel</button>
+      <button class="btn primary" id="personSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="scrim" id="settingsScrim">
+  <div class="modal">
+    <h2>Shifts &amp; facility</h2>
+    <p class="sub">The current shift is detected automatically from these times. A shift that ends earlier than it starts runs overnight.</p>
+    <div class="field"><label>Facility name</label><input id="sFacility" type="text" placeholder="Facility name"></div>
+    <div id="shiftFields"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="settingsCancel">Cancel</button>
+      <button class="btn primary" id="settingsSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".csv,.json,text/csv,application/json" style="display:none">
+<div class="toast" id="toast"><span class="tdot"></span><span id="toastMsg"></span></div>
+
+<script>
+"use strict";
+
+/* ---------------- Storage layer (local-first, graceful fallback) ----------------
+   Standalone build: saves to this browser's localStorage so data persists on
+   the device with no connection. If localStorage is blocked (e.g. a sandboxed
+   preview, or strict private mode) it falls back to in-memory and shows a
+   warning so nothing breaks. Keys are namespaced under "muster:". */
+const PREFIX = 'muster:';
+const Store = (() => {
+  const mem = {};
+  let ok = false;
+  try {
+    const k = PREFIX + '__test__';
+    window.localStorage.setItem(k, '1');
+    window.localStorage.removeItem(k);
+    ok = true;
+  } catch(e){ ok = false; }
+  return {
+    persistent: ok,
+    get(key){
+      if(!ok){ return key in mem ? mem[key] : null; }
+      try{ return window.localStorage.getItem(PREFIX + key); }
+      catch(e){ return key in mem ? mem[key] : null; }
+    },
+    set(key,val){
+      if(!ok){ mem[key] = val; return true; }
+      try{ window.localStorage.setItem(PREFIX + key, val); return true; }
+      catch(e){ mem[key] = val; return false; }
+    }
+  };
+})();
+
+/* ---------------- State ---------------- */
+const DEFAULTS = {
+  facility: 'Facility Muster',
+  shifts: [
+    { label:'FIRST', start:'06:00', end:'14:00' },
+    { label:'SECOND', start:'14:00', end:'22:00' },
+    { label:'THIRD', start:'22:00', end:'06:00' }
+  ]
+};
+let settings = JSON.parse(JSON.stringify(DEFAULTS));
+let roster = [];   // {id,name,contact,team,status:'in'|'out',since}
+let log = [];      // {id,personId,name,team,type:'in'|'out',ts,shift}
+let view = 'onsite';
+let query = '';
+let editingId = null;
+let personType = 'employee';
+
+const $ = id => document.getElementById(id);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* ---------------- Persistence ---------------- */
+async function loadAll(){
+  const s = await Store.get('settings');
+  if(s){ try{ settings = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(s)); }catch(e){} }
+  const d = await Store.get('data');
+  if(d){ try{ const o = JSON.parse(d); roster = o.roster||[]; log = o.log||[]; }catch(e){} }
+}
+async function saveData(){ await Store.set('data', JSON.stringify({roster, log})); }
+async function saveSettings(){ await Store.set('settings', JSON.stringify(settings)); }
+
+/* ---------------- Time / shift ---------------- */
+function pad(n){ return String(n).padStart(2,'0'); }
+function toMin(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
+function nowMin(d){ return d.getHours()*60 + d.getMinutes(); }
+function inWindow(t,start,end){
+  if(start===end) return true;
+  if(start<end) return t>=start && t<end;
+  return t>=start || t<end; // overnight
+}
+function currentShift(d=new Date()){
+  const t = nowMin(d);
+  for(const sh of settings.shifts){ if(inWindow(t, toMin(sh.start), toMin(sh.end))) return sh; }
+  return settings.shifts[0] || {label:'—',start:'',end:''};
+}
+function fmtTime(ts){ const d=new Date(ts); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function fmtFull(ts){
+  const d=new Date(ts);
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function elapsed(ts){
+  let s = Math.floor((Date.now()-ts)/60000);
+  if(s<1) return 'just now';
+  if(s<60) return s+'m';
+  const h=Math.floor(s/60), m=s%60;
+  return h+'h'+(m?' '+m+'m':'');
+}
+
+/* ---------------- Clock ---------------- */
+function tickClock(){
+  const d = new Date();
+  $('clock').textContent = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  $('clockDate').textContent = d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+  const sh = currentShift(d);
+  $('shiftBadge').textContent = 'Shift '+sh.label;
+  $('shiftWin').textContent = sh.start && sh.end ? sh.start+'–'+sh.end : '';
+}
+
+/* ---------------- Actions ---------------- */
+function onSiteList(){ return roster.filter(p=>p.status==='in'); }
+
+function checkIn(p){
+  if(p.status==='in') return;
+  p.status='in'; p.since=Date.now();
+  const sh=currentShift();
+  log.unshift({id:uid(),personId:p.id,name:p.name,team:p.team,type:'in',ts:Date.now(),shift:sh.label});
+  saveData(); render(); toast(p.name+' checked in');
+}
+function checkOut(p){
+  if(p.status!=='in') return;
+  p.status='out';
+  const sh=currentShift();
+  log.unshift({id:uid(),personId:p.id,name:p.name,team:p.team,type:'out',ts:Date.now(),shift:sh.label});
+  p.since=null;
+  saveData(); render(); toast(p.name+' checked out');
+}
+function checkAllOut(){
+  const on = onSiteList();
+  if(!on.length){ toast('No one is on site'); return; }
+  if(!confirm('Check out all '+on.length+' people currently on site?')) return;
+  const sh=currentShift();
+  on.forEach(p=>{ p.status='out'; p.since=null; log.unshift({id:uid(),personId:p.id,name:p.name,team:p.team,type:'out',ts:Date.now(),shift:sh.label}); });
+  saveData(); render(); toast('Checked out '+on.length+' people');
+}
+
+/* ---------------- Render ---------------- */
+function matches(p){
+  if(!query) return true;
+  const q=query.toLowerCase();
+  return [(p.name||''),(p.team||''),(p.contact||''),(p.company||''),(p.job||'')].some(s=>s.toLowerCase().includes(q));
+}
+
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function midnight(d){ const x=new Date(d); x.setHours(0,0,0,0); return x.getTime(); }
+function contractorStatus(p){
+  const days=p.days||0;
+  if(!days || !p.startDate) return null;
+  const start=midnight(p.startDate+'T00:00:00');
+  const today=midnight(new Date());
+  const idx=Math.floor((today-start)/86400000)+1;            // day 1 = start date
+  const end=new Date(start+(days-1)*86400000);
+  const endStr=end.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  if(idx<1) return {text:'starts '+new Date(start).toLocaleDateString(undefined,{month:'short',day:'numeric'}),cls:''};
+  if(idx>days){ const over=idx-days; return {text:'overdue '+over+'d · was due '+endStr,cls:'over'}; }
+  const cls=(days-idx)<=1?'soon':'';
+  return {text:'day '+idx+' of '+days+' · ends '+endStr,cls};
+}
+
+function personRow(p){
+  const con = p.type==='contractor';
+  const meta=[];
+  if(con){
+    if(p.company) meta.push('<span class="team">'+esc(p.company)+'</span>');
+    if(p.job) meta.push('<span>'+esc(p.job)+'</span>');
+    const cs=contractorStatus(p);
+    if(cs) meta.push('<span class="dur '+cs.cls+'">'+esc(cs.text)+'</span>');
+  } else {
+    if(p.team) meta.push('<span class="team">'+esc(p.team)+'</span>');
+  }
+  if(p.contact) meta.push('<span>'+esc(p.contact)+'</span>');
+  if(p.status==='in' && p.since) meta.push('<span class="mono">in '+fmtTime(p.since)+' · '+elapsed(p.since)+'</span>');
+  const btn = p.status==='in'
+    ? '<button class="rowbtn out" data-out="'+p.id+'">Check out</button>'
+    : '<button class="rowbtn in" data-in="'+p.id+'">Check in</button>';
+  const tag = con ? '<span class="ctag">Contractor</span>' : '';
+  return '<div class="row'+(con?' con':'')+'"><span class="dot '+(p.status==='in'?'in':'')+'"></span>'+
+    '<div class="who"><div class="nm">'+esc(p.name)+tag+'</div>'+
+    (meta.length?'<div class="meta">'+meta.join('')+'</div>':'')+'</div>'+btn+'</div>';
+}
+
+function render(){
+  // hero counts
+  const on = onSiteList();
+  const cEl=$('onSiteCount'); cEl.textContent=on.length; cEl.classList.toggle('zero',on.length===0);
+  $('pillOnsite').textContent=on.length;
+  $('pillRoster').textContent=roster.length;
+  $('pillContractors').textContent=roster.filter(p=>p.type==='contractor').length;
+  $('pillLog').textContent=log.length;
+  $('facilityName').textContent=(settings.facility||'Facility Muster').toUpperCase();
+
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===view));
+  const list=$('list');
+
+  // Quick check-in: any text in the search box searches the whole directory and
+  // shows in/out buttons, no matter which people tab you're on.
+  if(query && view!=='log'){
+    const found = roster.filter(matches)
+      .sort((a,b)=> (a.status===b.status?0:a.status==='in'?-1:1) || a.name.localeCompare(b.name));
+    if(!found.length){ list.innerHTML = emptyBlock('No match','Nobody in the directory matches “'+esc(query)+'”. Tap “Add person” to add a walk-in or contractor.'); return; }
+    list.innerHTML = '<div class="results-head">'+found.length+(found.length>1?' matches':' match')+' — tap to check in or out</div>'+ found.map(personRow).join('');
+    return;
+  }
+
+  if(view==='log'){
+    const items = log.filter(e=>!query || e.name.toLowerCase().includes(query.toLowerCase()) || (e.team||'').toLowerCase().includes(query.toLowerCase()));
+    if(!items.length){ list.innerHTML = emptyBlock('No records yet','Check-ins and check-outs will appear here as a time-stamped log you can export.'); return; }
+    list.innerHTML = items.slice(0,500).map(e=>
+      '<div class="logrow"><span class="tag '+e.type+'">'+(e.type==='in'?'IN':'OUT')+'</span>'+
+      '<div class="who"><div class="nm">'+esc(e.name)+'</div>'+(e.team?'<div class="meta"><span class="team">'+esc(e.team)+'</span></div>':'')+'</div>'+
+      '<div class="ts">'+fmtFull(e.ts)+'<br><span class="sh">Shift '+esc(e.shift||'—')+'</span></div></div>'
+    ).join('');
+    return;
+  }
+
+  let people;
+  if(view==='onsite'){ people = on.slice(); people.sort((a,b)=>(b.since||0)-(a.since||0)); }
+  else if(view==='contractors'){ people = roster.filter(p=>p.type==='contractor'); people.sort((a,b)=> (a.status===b.status?0:a.status==='in'?-1:1) || a.name.localeCompare(b.name)); }
+  else { people = roster.slice(); people.sort((a,b)=> (a.status===b.status?0:a.status==='in'?-1:1) || a.name.localeCompare(b.name)); }
+
+  if(!people.length){
+    if(view==='onsite') list.innerHTML = emptyBlock('Nobody on site','Type a name in the search box above to check someone in, or open the Roster tab.');
+    else if(view==='contractors') list.innerHTML = emptyBlock('No contractors yet','Tap “Add person”, switch the toggle to Contractor, and record their company, the job, and how many days it should take.');
+    else if(roster.length===0) list.innerHTML = rosterEmpty();
+    else list.innerHTML = emptyBlock('Nothing here','No people to show in this view yet.');
+    return;
+  }
+  list.innerHTML = people.map(personRow).join('');
+}
+
+function emptyBlock(h,p){ return '<div class="empty"><h2>'+h+'</h2><p>'+p+'</p></div>'; }
+function rosterEmpty(){
+  return '<div class="empty"><h2>Your roster is empty</h2>'+
+    '<p>Import your staff list from a CSV (columns: name, contact, team), or add people one at a time. Walk-ins can be added any time too.</p>'+
+    '<div class="empty-actions"><button class="btn primary" id="emptyAdd">Add a person</button>'+
+    '<button class="btn" id="emptyImport">Import CSV</button>'+
+    '<button class="btn ghost" id="emptySample">Load sample roster</button></div></div>';
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------------- Person modal ---------------- */
+function setPersonType(t){
+  personType=t;
+  $('personScrim').classList.toggle('is-contractor', t==='contractor');
+  $('typeToggle').querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.type===t));
+}
+function openPerson(id){
+  editingId = id||null;
+  const p = id ? roster.find(x=>x.id===id) : null;
+  setPersonType(p ? (p.type||'employee') : 'employee');
+  $('personTitle').textContent = p?'Edit person':'Add person';
+  $('personSub').textContent = p?'Update this person’s details.':'Adds to the roster. Tick the box to check them in immediately.';
+  $('fName').value=p?p.name:''; $('fContact').value=p?(p.contact||''):''; $('fTeam').value=p?(p.team||''):'';
+  $('fCompany').value=p?(p.company||''):''; $('fJob').value=p?(p.job||''):'';
+  $('fDays').value=p&&p.days?p.days:''; $('fStart').value=(p&&p.startDate)?p.startDate:todayISO();
+  $('checkInToggleWrap').style.display = p?'none':'flex'; $('fCheckIn').checked=false;
+  $('personScrim').classList.add('show'); setTimeout(()=>$('fName').focus(),50);
+}
+function closePerson(){ $('personScrim').classList.remove('show'); editingId=null; }
+function savePerson(){
+  const name=$('fName').value.trim();
+  if(!name){ $('fName').focus(); $('fName').style.borderColor='var(--red)'; return; }
+  const contact=$('fContact').value.trim();
+  const isCon = personType==='contractor';
+  const fields = isCon
+    ? { type:'contractor', team:'', company:$('fCompany').value.trim(), job:$('fJob').value.trim(),
+        days:parseInt($('fDays').value,10)||0, startDate:$('fStart').value||todayISO() }
+    : { type:'employee', team:$('fTeam').value.trim(), company:'', job:'', days:0, startDate:'' };
+  if(editingId){
+    const p=roster.find(x=>x.id===editingId);
+    if(p){ p.name=name; p.contact=contact; Object.assign(p, fields); }
+    toast('Saved');
+  } else {
+    const p=Object.assign({id:uid(),name,contact,status:'out',since:null}, fields);
+    roster.push(p);
+    if($('fCheckIn').checked){ checkIn(p); } else { toast(isCon?'Contractor added':'Added to roster'); }
+  }
+  saveData(); closePerson(); render();
+}
+
+/* ---------------- Settings modal ---------------- */
+function openSettings(){
+  $('sFacility').value=settings.facility;
+  $('shiftFields').innerHTML = settings.shifts.map((sh,i)=>
+    '<div class="field"><label>Shift '+esc(sh.label)+' — start &amp; end</label>'+
+    '<div style="display:flex;gap:10px">'+
+    '<input type="time" data-shift="'+i+'" data-k="start" value="'+sh.start+'">'+
+    '<input type="time" data-shift="'+i+'" data-k="end" value="'+sh.end+'"></div></div>'
+  ).join('');
+  $('settingsScrim').classList.add('show');
+}
+function closeSettings(){ $('settingsScrim').classList.remove('show'); }
+function saveSettingsModal(){
+  settings.facility=$('sFacility').value.trim()||'Facility Muster';
+  $('shiftFields').querySelectorAll('input[type=time]').forEach(inp=>{
+    const i=+inp.dataset.shift, k=inp.dataset.k; if(inp.value) settings.shifts[i][k]=inp.value;
+  });
+  saveSettings(); closeSettings(); tickClock(); render(); toast('Settings saved');
+}
+
+/* ---------------- CSV / backup ---------------- */
+function download(name, text, type){
+  const blob=new Blob([text],{type:type||'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function csvCell(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function exportRoster(){
+  const head=['name','type','contact','team','company','job','days_required','start_date','status'];
+  const rows=[head].concat(roster.map(p=>[p.name,p.type||'employee',p.contact||'',p.team||'',p.company||'',p.job||'',p.days||'',p.startDate||'',p.status]));
+  download('roster.csv', rows.map(r=>r.map(csvCell).join(',')).join('\n'), 'text/csv');
+  toast('Roster exported');
+}
+function exportLog(){
+  const rows=[['name','team','event','date','time','shift']].concat(log.slice().reverse().map(e=>{
+    const d=new Date(e.ts); return [e.name,e.team||'',e.type,d.toLocaleDateString(),pad(d.getHours())+':'+pad(d.getMinutes()),e.shift||''];
+  }));
+  download('check-in-log.csv', rows.map(r=>r.map(csvCell).join(',')).join('\n'), 'text/csv');
+  toast('Log exported');
+}
+function backup(){
+  download('muster-backup-'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify({settings,roster,log},null,2), 'application/json');
+  toast('Backup saved');
+}
+function parseCSV(text){
+  const rows=[]; let row=[],cell='',q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(cell); cell=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n')i++; row.push(cell); rows.push(row); row=[]; cell=''; }
+    else cell+=c;
+  }
+  if(cell.length||row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r=>r.some(c=>c.trim()!==''));
+}
+function importRosterCSV(text){
+  const rows=parseCSV(text); if(!rows.length){ toast('Empty file'); return; }
+  let start=0, idx={name:0,contact:1,team:2};
+  const head=rows[0].map(h=>h.trim().toLowerCase());
+  if(head.includes('name')){ start=1; idx={name:head.indexOf('name'),contact:head.findIndex(h=>/contact|email|phone/.test(h)),team:head.findIndex(h=>/team|group|dept/.test(h))}; }
+  let added=0;
+  for(let i=start;i<rows.length;i++){
+    const r=rows[i]; const name=(r[idx.name]||'').trim(); if(!name) continue;
+    roster.push({id:uid(),name,contact:(idx.contact>-1?r[idx.contact]:'' )||'',team:(idx.team>-1?r[idx.team]:'')||'',status:'out',since:null});
+    added++;
+  }
+  saveData(); render(); toast('Imported '+added+' people');
+}
+function restoreBackup(text){
+  try{ const o=JSON.parse(text);
+    if(o.roster) roster=o.roster; if(o.log) log=o.log; if(o.settings) settings=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),o.settings);
+    saveData(); saveSettings(); tickClock(); render(); toast('Backup restored');
+  }catch(e){ toast('Could not read that file'); }
+}
+let fileMode='csv';
+function pickFile(mode){ fileMode=mode; $('fileInput').value=''; $('fileInput').click(); }
+
+function loadSample(){
+  const s=[['Aisha Khan','aisha.k@plant.co','Line 1'],['Marcus Reed','555-0142','Line 1'],['Tomás Vega','t.vega@plant.co','Line 3'],
+   ['Priya Nair','priya.n@plant.co','Maintenance'],['Wei Chen','555-0188','Maintenance'],['Sofia Rossi','s.rossi@plant.co','Quality'],
+   ['James Okoye','555-0199','Packing'],['Hana Park','hana.p@plant.co','Line 3'],['Diego Mora','d.mora@plant.co','Logistics'],['Lena Vogt','555-0123','Quality']];
+  s.forEach(([name,contact,team])=>roster.push({id:uid(),name,contact,team,status:'out',since:null}));
+  saveData(); render(); toast('Sample roster loaded');
+}
+
+/* ---------------- Toast ---------------- */
+let toastT;
+function toast(msg){ $('toastMsg').textContent=msg; $('toast').classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>$('toast').classList.remove('show'),2200); }
+
+/* ---------------- Print ---------------- */
+function printMuster(){
+  const on=onSiteList();
+  const sh=currentShift();
+  $('printMeta').textContent=(settings.facility||'')+' · Shift '+sh.label+' · '+new Date().toLocaleString()+' · '+on.length+' on site';
+  $('list').innerHTML = on.length? on.sort((a,b)=>a.name.localeCompare(b.name)).map(personRow).join('') : emptyBlock('Nobody on site','');
+  view='onsite'; document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view==='onsite'));
+  setTimeout(()=>{ window.print(); render(); },80);
+}
+
+/* ---------------- Events ---------------- */
+function bind(){
+  $('search').addEventListener('input',e=>{ query=e.target.value.trim(); $('searchBox').classList.toggle('has',!!query); render(); });
+  $('searchClear').addEventListener('click',()=>{ $('search').value=''; query=''; $('searchBox').classList.remove('has'); render(); $('search').focus(); });
+
+  $('tabs').addEventListener('click',e=>{ const t=e.target.closest('.tab'); if(!t)return; view=t.dataset.view; render(); $('list').scrollTop=0; });
+
+  $('list').addEventListener('click',e=>{
+    const inB=e.target.closest('[data-in]'), outB=e.target.closest('[data-out]');
+    if(inB){ const p=roster.find(x=>x.id===inB.dataset.in); if(p)checkIn(p); }
+    else if(outB){ const p=roster.find(x=>x.id===outB.dataset.out); if(p)checkOut(p); }
+    else if(e.target.id==='emptyAdd') openPerson();
+    else if(e.target.id==='emptyImport') pickFile('csv');
+    else if(e.target.id==='emptySample') loadSample();
+  });
+
+  $('addBtn').addEventListener('click',()=>openPerson());
+  $('personCancel').addEventListener('click',closePerson);
+  $('personSave').addEventListener('click',savePerson);
+  $('typeToggle').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setPersonType(b.dataset.type); });
+  $('personScrim').addEventListener('click',e=>{ if(e.target.id==='personScrim') closePerson(); });
+  $('fName').addEventListener('input',()=>$('fName').style.borderColor='');
+  $('fName').addEventListener('keydown',e=>{ if(e.key==='Enter') savePerson(); });
+  $('fTeam').addEventListener('keydown',e=>{ if(e.key==='Enter') savePerson(); });
+
+  // menu
+  const menu=$('menu');
+  $('menuBtn').addEventListener('click',e=>{ e.stopPropagation(); menu.classList.toggle('show'); });
+  document.addEventListener('click',()=>menu.classList.remove('show'));
+  menu.addEventListener('click',e=>e.stopPropagation());
+  $('mImport').addEventListener('click',()=>{ menu.classList.remove('show'); pickFile('csv'); });
+  $('mExportRoster').addEventListener('click',()=>{ menu.classList.remove('show'); exportRoster(); });
+  $('mExportLog').addEventListener('click',()=>{ menu.classList.remove('show'); exportLog(); });
+  $('mPrint').addEventListener('click',()=>{ menu.classList.remove('show'); printMuster(); });
+  $('mBackup').addEventListener('click',()=>{ menu.classList.remove('show'); backup(); });
+  $('mRestore').addEventListener('click',()=>{ menu.classList.remove('show'); pickFile('json'); });
+  $('mSettings').addEventListener('click',()=>{ menu.classList.remove('show'); openSettings(); });
+  $('mEndShift').addEventListener('click',()=>{ menu.classList.remove('show'); checkAllOut(); });
+
+  $('settingsCancel').addEventListener('click',closeSettings);
+  $('settingsSave').addEventListener('click',saveSettingsModal);
+  $('settingsScrim').addEventListener('click',e=>{ if(e.target.id==='settingsScrim') closeSettings(); });
+
+  $('fileInput').addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{ fileMode==='json'? restoreBackup(r.result) : importRosterCSV(r.result); };
+    r.readAsText(f);
+  });
+
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closePerson(); closeSettings(); menu.classList.remove('show'); } });
+}
+
+/* ---------------- Boot ---------------- */
+(async function init(){
+  if(!Store.persistent) $('storeBanner').style.display='block';
+  await loadAll();
+  bind();
+  tickClock(); setInterval(tickClock,1000);
+  setInterval(()=>{ if(view!=='log') render(); },60000); // refresh elapsed times
+  render();
+})();
+</script>
+</body>
+</html>
