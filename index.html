@@ -431,6 +431,9 @@ const Store = (() => {
 const DEFAULTS = {
   facility: 'Facility Muster',
   shifts: [
+    { label:'A', start:'06:00', end:'14:00' },
+    { label:'B', start:'14:00', end:'22:00' },
+    { label:'C', start:'22:00', end:'06:00' }
   ]
 };
 let settings = JSON.parse(JSON.stringify(DEFAULTS));
