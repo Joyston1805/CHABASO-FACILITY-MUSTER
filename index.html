@@ -465,11 +465,11 @@ const Store = (() => {
 
 /* ---------------- State ---------------- */
 const DEFAULTS = {
-  facility: 'Facility Muster',
+  facility: '360 James St',
   shifts: [
-    { label:'A', start:'06:00', end:'14:00' },
-    { label:'B', start:'14:00', end:'22:00' },
-    { label:'C', start:'22:00', end:'06:00' }
+    { label:'1st ', start:'08:00', end:'16:30' },
+    { label:'2nd', start:'16:00', end:'00:30' },
+    { label:'3rd', start:'00:00', end:'08:30' }
   ]
 };
 let settings = JSON.parse(JSON.stringify(DEFAULTS));
